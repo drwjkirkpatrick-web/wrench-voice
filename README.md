@@ -104,6 +104,15 @@ Eight combustion engine families with torque tables, fluid capacities, known iss
 | Engine | Era | Vehicles |
 |--------|-----|----------|
 | Toyota 22RE | 1983–2004 | Pickup, 4Runner |
+| Toyota 2JZ-GE/GTE | 1991–2007 | Supra MKIV, GS300, IS300 |
+| Toyota 1MZ-FE | 1994–2006 | Camry, Avalon, Sienna, ES300 |
+| Toyota 1ZZ-FE / 2ZZ-GE | 1998–2008 | Corolla, Matrix, Celica, Elise |
+| Toyota 2GR-FE | 2004–present | Camry, Avalon, Highlander, RX350 |
+| Toyota 5VZ-FE | 1995–2004 | Tacoma, 4Runner, Tundra, T100 |
+| Toyota 2TR-FE | 2004–present | Tacoma, 4Runner, Hilux |
+| Toyota 3S-GTE | 1986–2007 | Celica GT-Four, MR2 Turbo |
+| Toyota 1UZ-FE / 2UZ-FE | 1989–2009 | LS400, Land Cruiser, Tundra, Sequoia |
+| Toyota 7M-GE/GTE | 1986–1992 | Supra MKIII, Cressida |
 | Ford 300 I6 | 1965–1996 | F-150, E-150 |
 | Honda B-Series | 1988–2001 | Civic, Integra, CR-V |
 | Chevy Small Block V8 | 1955–2003 | Trucks, Camaro, Corvette |
@@ -147,15 +156,15 @@ pytest tests/test_diagnostic_engine.py -v
 ## Roadmap
 
 - [x] Core diagnostic engine
-- [x] Knowledge base (8 engines)
+- [x] Knowledge base (8 → 17 engines, 10 Toyota families)
 - [x] Parts finder with caching
 - [x] Parts planner with BOM expansion
-- [x] CLI
+- [x] OBD-II bridge (DTC reader + live data + mock mode)
+- [x] CLI (diagnose, parts, plan, kb, obd)
 - [x] Hermes skill + references
-- [ ] OBD-II bridge (python-obd integration)
 - [ ] Voice gateway (local STT/TTS server on shop Pi)
 - [ ] Local inventory CSV editor
-- [ ] More engine families (LS, 2JZ, M50, etc.)
+- [ ] More engine families (LS, M50, EJ, etc.)
 
 ---
 

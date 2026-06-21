@@ -88,5 +88,17 @@ def kb(query: str) -> None:
         click.echo(f"{r.score:.2f}  {r.title}\n    {r.snippet}\n")
 
 
+@main.command()
+@click.option("--port", "-p", default="/dev/ttyUSB0", help="OBD adapter serial port")
+@click.option("--mock", is_flag=True, help="Simulate OBD data (no adapter needed)")
+def obd(port: str, mock: bool) -> None:
+    """Perform an OBD-II scan: read codes, freeze frame, readiness, live data."""
+    from wrench_voice.obd_bridge import OBDBridge
+
+    finder = OBDBridge(port=port, mock_mode=mock)
+    result = finder.full_scan()
+    click.echo(result.to_markdown())
+
+
 if __name__ == "__main__":
     main()

@@ -666,6 +666,17 @@ SYMPTOM_CAUSES: dict[str, list[Cause]] = {
 
 ENGINE_FAMILY_ALIASES: dict[str, list[str]] = {
     "toyota_22re":    ["22re", "22r", "toyota 2.4", "toyota pickup", "toyota 4runner 1985-2004"],
+    "toyota_2jz":     ["2jz", "2jz-ge", "2jz-gte", "supra", "aristo", "lexus gs300", "is300", "3.0 i6 toyota"],
+    "toyota_1mz":     ["1mz", "1mz-fe", "avalon", "camry v6 1994", "sienna", "solara", "es300", "highlander v6", "3.0 v6 toyota"],
+    "toyota_1zz":     ["1zz", "1zz-fe", "corolla", "matrix", "pontiac vibe", "celica gt", "1.8 toyota"],
+    "toyota_2zz":     ["2zz", "2zz-ge", "celica gts", "lotus elise", "lotus exige", "corolla xrs", "matrix xrs", "vvtl-i"],
+    "toyota_2gr":     ["2gr", "2gr-fe", "camry v6 2007", "avalon v6 2005", "highlander v6 2008", "rav4 v6", "sienna v6", "lexus es350", "rx350", "gs350", "venza v6", "3.5 v6 toyota"],
+    "toyota_5vz":     ["5vz", "5vz-fe", "tacoma v6 1995", "4runner v6", "tundra v6", "t100 v6", "3.4 v6 toyota"],
+    "toyota_2tr":     ["2tr", "2tr-fe", "tacoma 2.7", "4runner 2.7", "hilux 2.7", "fortuner 2.7"],
+    "toyota_3sgte":   ["3sgte", "3s-gte", "celica gt-four", "mr2 turbo", "caldina gt-t", "ct26", "ct20b"],
+    "toyota_1uz":     ["1uz", "1uz-fe", "ls400", "sc400", "lexus v8 4.0", "cressida v8"],
+    "toyota_2uz":     ["2uz", "2uz-fe", "land cruiser", "tundra v8", "sequoia", "lx470", "lexus v8 4.7"],
+    "toyota_7m":      ["7m", "7m-ge", "7m-gte", "supra mk3", "cressida turbo", "3.0 i6 turbo toyota"],
     "ford_300":       ["300", "4.9l", "ford inline 6", "ford f-150 1965-1996", "ford e-150"],
     "honda_b_series": ["b16", "b18", "b20", "integra", "civic si", "cr-v b20"],
     "chevy_350":      ["350", "5.7", "small block", "chevrolet 350", "gm 350"],
