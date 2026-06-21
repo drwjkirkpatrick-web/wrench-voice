@@ -112,9 +112,15 @@ Eight combustion engine families with torque tables, fluid capacities, known iss
 | Toyota 2TR-FE | 2004–present | Tacoma, 4Runner, Hilux |
 | Toyota 3S-GTE | 1986–2007 | Celica GT-Four, MR2 Turbo |
 | Toyota 1UZ-FE / 2UZ-FE | 1989–2009 | LS400, Land Cruiser, Tundra, Sequoia |
-| Toyota 7M-GE/GTE | 1986–1992 | Supra MKIII, Cressida |
-| Ford 300 I6 | 1965–1996 | F-150, E-150 |
+| Toyota 7M-GE/GTE | 1986–1992 | Supra MK3, Cressida |
 | Honda B-Series | 1988–2001 | Civic, Integra, CR-V |
+| Honda D-Series | 1984–2005 | Civic, CR-X, Del Sol |
+| Honda F-Series | 1989–2002 | Accord, Prelude, Odyssey |
+| Honda H-Series | 1992–2001 | Prelude, Accord |
+| Honda J-Series | 1996–present | Accord, Odyssey, Pilot, TL, MDX |
+| Honda K-Series | 2001–present | Civic, CR-V, Accord, TSX, RSX |
+| Honda R-Series | 2006–2015 | Civic 1.8 |
+| Ford 300 I6 | 1965–1996 | F-150, E-150 |
 | Chevy Small Block V8 | 1955–2003 | Trucks, Camaro, Corvette |
 | Jeep 4.0 I6 | 1987–2006 | Wrangler, Cherokee |
 | Nissan KA24DE | 1997–2004 | Frontier, Xterra |
