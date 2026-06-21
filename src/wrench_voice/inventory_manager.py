@@ -39,6 +39,8 @@ class StockItem:
     qty_on_hand: int
     unit_cost: float        # FIFO-averaged cost
     bin_location: str       # e.g. "A3-2" (aisle 3, shelf 2)
+    barcode: str = ""
+    last_price: float = 0.0   # Most recent market price
     reorder_min: int = 0
     reorder_max: int = 0
     preferred_supplier: str = ""
@@ -88,6 +90,7 @@ class InventoryManager:
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS inventory (
                     sku TEXT PRIMARY KEY,
+                    barcode TEXT,
                     part_number TEXT NOT NULL,
                     part_name TEXT NOT NULL,
                     supplier TEXT,
@@ -101,7 +104,6 @@ class InventoryManager:
                     last_received TEXT,
                     last_consumed TEXT
                 );
-
                 CREATE TABLE IF NOT EXISTS stock_movements (
                     movement_id TEXT PRIMARY KEY,
                     sku TEXT REFERENCES inventory(sku),
@@ -112,10 +114,16 @@ class InventoryManager:
                     performed_by TEXT,
                     timestamp TEXT
                 );
-
+                CREATE INDEX IF NOT EXISTS idx_inv_barcode ON inventory(barcode);
                 CREATE INDEX IF NOT EXISTS idx_inv_bin ON inventory(bin_location);
                 CREATE INDEX IF NOT EXISTS idx_movement_sku ON stock_movements(sku);
             """)
+            # Migrate: add columns/indexes for older DBs
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(inventory)")]
+            if "barcode" not in cols:
+                conn.execute("ALTER TABLE inventory ADD COLUMN barcode TEXT")
+            if "last_price" not in cols:
+                conn.execute("ALTER TABLE inventory ADD COLUMN last_price REAL DEFAULT 0.0")
 
     # ─── Stock Operations ────────────────────────────────────────────────────────────
 
@@ -131,6 +139,7 @@ class InventoryManager:
         reorder_min: int = 0,
         reorder_max: int = 0,
         notes: str = "",
+        barcode: str = "",
     ) -> StockItem:
         """Add parts to inventory. Updates qty and recalculates FIFO cost."""
         now = datetime.now().isoformat()
@@ -147,19 +156,19 @@ class InventoryManager:
                 conn.execute(
                     """UPDATE inventory
                        SET qty_on_hand=?, unit_cost=?, supplier=?, bin_location=?,
-                           last_received=?, reorder_min=?, reorder_max=?, notes=?
+                           last_received=?, reorder_min=?, reorder_max=?, notes=?, barcode=?
                        WHERE sku=?""",
                     (new_qty, round(new_cost, 2), supplier, bin_location, now,
-                     reorder_min, reorder_max, notes, sku),
+                     reorder_min, reorder_max, notes, barcode, sku),
                 )
             else:
                 conn.execute(
                     """INSERT INTO inventory
                        (sku, part_number, part_name, supplier, qty_on_hand, unit_cost,
-                        bin_location, last_received, reorder_min, reorder_max, notes)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                        bin_location, last_received, reorder_min, reorder_max, notes, barcode)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (sku, part_number, part_name, supplier, qty, unit_cost,
-                     bin_location, now, reorder_min, reorder_max, notes),
+                     bin_location, now, reorder_min, reorder_max, notes, barcode),
                 )
 
             # Log movement
@@ -229,6 +238,37 @@ class InventoryManager:
             qty_on_hand=d["qty_on_hand"],
             unit_cost=d["unit_cost"],
             bin_location=d["bin_location"],
+            barcode=d.get("barcode", ""),
+            last_price=d.get("last_price", 0.0),
+            reorder_min=d["reorder_min"],
+            reorder_max=d["reorder_max"],
+            preferred_supplier=d["preferred_supplier"],
+            notes=d["notes"],
+            last_received=d["last_received"],
+            last_consumed=d["last_consumed"],
+        )
+
+    def get_item_by_barcode(self, barcode: str) -> StockItem | None:
+        """Look up inventory item by barcode (for scanner integration)."""
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT * FROM inventory WHERE barcode=? OR sku=?",
+                (barcode, barcode),
+            ).fetchone()
+        if not row:
+            return None
+        cols = [c[0] for c in conn.execute("SELECT * FROM inventory LIMIT 0").description]
+        d = dict(zip(cols, row))
+        return StockItem(
+            sku=d["sku"],
+            part_number=d["part_number"],
+            part_name=d["part_name"],
+            supplier=d["supplier"],
+            qty_on_hand=d["qty_on_hand"],
+            unit_cost=d["unit_cost"],
+            bin_location=d["bin_location"],
+            barcode=d.get("barcode", ""),
+            last_price=d.get("last_price", 0.0),
             reorder_min=d["reorder_min"],
             reorder_max=d["reorder_max"],
             preferred_supplier=d["preferred_supplier"],
@@ -242,9 +282,9 @@ class InventoryManager:
         with sqlite3.connect(self.db_path) as conn:
             rows = conn.execute(
                 """SELECT * FROM inventory
-                   WHERE sku LIKE ? OR part_number LIKE ? OR part_name LIKE ? OR bin_location LIKE ?
+                   WHERE sku LIKE ? OR part_number LIKE ? OR part_name LIKE ? OR bin_location LIKE ? OR barcode LIKE ?
                    ORDER BY part_name LIMIT ?""",
-                (q, q, q, q, limit),
+                (q, q, q, q, q, limit),
             ).fetchall()
         cols = [c[0] for c in conn.execute("SELECT * FROM inventory LIMIT 0").description]
         out: list[StockItem] = []
@@ -254,6 +294,7 @@ class InventoryManager:
                 sku=d["sku"], part_number=d["part_number"], part_name=d["part_name"],
                 supplier=d["supplier"], qty_on_hand=d["qty_on_hand"],
                 unit_cost=d["unit_cost"], bin_location=d["bin_location"],
+                barcode=d.get("barcode", ""), last_price=d.get("last_price", 0.0),
                 reorder_min=d["reorder_min"], reorder_max=d["reorder_max"],
                 preferred_supplier=d["preferred_supplier"], notes=d["notes"],
                 last_received=d["last_received"], last_consumed=d["last_consumed"],
@@ -274,6 +315,7 @@ class InventoryManager:
                 sku=d["sku"], part_number=d["part_number"], part_name=d["part_name"],
                 supplier=d["supplier"], qty_on_hand=d["qty_on_hand"],
                 unit_cost=d["unit_cost"], bin_location=d["bin_location"],
+                barcode=d.get("barcode", ""), last_price=d.get("last_price", 0.0),
                 reorder_min=d["reorder_min"], reorder_max=d["reorder_max"],
                 preferred_supplier=d["preferred_supplier"], notes=d["notes"],
                 last_received=d["last_received"], last_consumed=d["last_consumed"],

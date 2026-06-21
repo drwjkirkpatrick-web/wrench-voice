@@ -21,12 +21,15 @@ digital_inspection  Photo-based inspection with PDF report
 customer_notifier   SMS/email customer notifications
 voice_gateway       Hot-resident STT/TTS gateway (faster-whisper, piper)
 sms_billing         SMS billing reminders + AR aging
+microphone_input    Live microphone capture (ALSA, PyAudio, WAV fallback)
+barcode_scanner     USB HID + camera barcode scanning for parts lookup
+audio_effects       TTS post-processing: normalization, EQ, compression, gate
 
 Integration Stubs
 -----------------
 quickbooks_sync     Invoice push to QuickBooks
-quickbooks_sync     Stub for Carfax / AutoCheck
-quickbooks_sync     Calendar sync (Google / Outlook)
+carfax_stub         Stub for Carfax / AutoCheck
+calendar_stub       Calendar sync (Google / Outlook)
 
 Usage
 -----
@@ -45,4 +48,4 @@ Usage
     result = voice.transcribe_audio("recording.wav")
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"

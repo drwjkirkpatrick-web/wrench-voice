@@ -326,5 +326,100 @@ def bill_overdue(days: int) -> None:
         click.echo(f"{inv['invoice_id']}: {inv['customer']} — ${inv['total']:.2f} (issued {inv['issued']})")
 
 
+@main.group()
+def mic():
+    """Live microphone capture and calibration."""
+    pass
+
+@mic.command("calibrate")
+@click.option("--backend", default="mock", help="ALSA, pyaudio, or mock")
+@click.option("--duration", type=float, default=2.0)
+def mic_calibrate(backend: str, duration: float) -> None:
+    from wrench_voice.microphone_input import MicrophoneInput
+    m = MicrophoneInput(backend=backend)
+    threshold = m.calibrate(duration_sec=duration)
+    click.echo(f"Silence threshold set to {threshold:.1f} RMS")
+
+@mic.command("record")
+@click.option("--duration", type=float, default=5.0)
+@click.option("--output", "-o", default="/tmp/wrench_recording.wav")
+@click.option("--backend", default="mock")
+def mic_record(duration: float, output: str, backend: str) -> None:
+    from wrench_voice.microphone_input import MicrophoneInput
+    m = MicrophoneInput(backend=backend)
+    result = m.record_to_file(duration_sec=duration, out_path=output)
+    click.echo(f"Saved {result.file_path}: {result.duration_sec:.2f}s, peak RMS={result.peak_rms:.1f}")
+    m.close()
+
+
+@main.group()
+def scan():
+    """Barcode scanner for parts intake and lookup."""
+    pass
+
+@scan.command("listen")
+@click.option("--backend", default="mock", help="hid, camera, mock, or manual")
+@click.option("--device")
+def scan_listen(backend: str, device: str | None) -> None:
+    from wrench_voice.barcode_scanner import BarcodeScanner
+    scanner = BarcodeScanner(backend=backend, device=device)
+    click.echo("Listening for barcodes... (Ctrl+C to stop)")
+    try:
+        scanner.start()
+        while True:
+            bc, ts = scanner.get_scan(timeout=2.0) or (None, None)
+            if bc:
+                click.echo(f"Scanned: {bc}")
+                result = scanner.lookup_inventory(bc)
+                if result.found:
+                    click.echo(f"  In stock: {result.part_name} x{result.qty_on_hand} @ {result.bin_location}")
+                else:
+                    parts = scanner.lookup_parts(bc)
+                    if parts:
+                        click.echo(f"  Best price: {parts[0].get('supplier', 'N/A')} @ ${parts[0].get('price', 0):.2f}")
+                    else:
+                        click.echo("  Not in inventory or catalog")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        scanner.close()
+
+
+@main.group()
+def audio():
+    """TTS audio effects: normalization, EQ, compression, gate."""
+    pass
+
+@audio.command("process")
+@click.argument("input_wav")
+@click.argument("output_wav")
+@click.option("--profile", default="garage", help="garage, office, outdoor, headphones, flat")
+@click.option("--target-lufs", type=float, default=-16.0)
+@click.option("--speed", type=float, default=1.0)
+def audio_process(input_wav: str, output_wav: str, profile: str, target_lufs: float, speed: float) -> None:
+    from wrench_voice.audio_effects import AudioEffects, AudioEffectsConfig
+    import pathlib
+    cfg = AudioEffectsConfig(profile=profile, target_lufs=target_lufs, speed=speed)
+    fx = AudioEffects(cfg)
+    raw = pathlib.Path(input_wav).read_bytes()
+    processed = fx.process(raw)
+    pathlib.Path(output_wav).write_bytes(processed)
+    before = fx.measure_loudness(raw)
+    after = fx.measure_loudness(processed)
+    click.echo(f"Processed: {output_wav}")
+    click.echo(f"  Loudness: {before:.1f} → {after:.1f} LUFS")
+    click.echo(f"  Profile: {profile} | Speed: {speed}x")
+
+@audio.command("measure")
+@click.argument("input_wav")
+def audio_measure(input_wav: str) -> None:
+    from wrench_voice.audio_effects import AudioEffects
+    import pathlib
+    fx = AudioEffects()
+    raw = pathlib.Path(input_wav).read_bytes()
+    lufs = fx.measure_loudness(raw)
+    click.echo(f"Integrated loudness: {lufs:.1f} LUFS")
+
+
 if __name__ == "__main__":
     main()

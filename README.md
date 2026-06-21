@@ -29,11 +29,11 @@ Speak naturally. Get answers instantly. Hands stay clean. Eyes stay on the engin
 
 Speak a symptom. Get a ranked diagnosis with field tests.
 
-> *"Overheating at idle, '96 Camry 2.2L"*
-
-> *"Most likely cause: low coolant level. Second: stuck thermostat. [pause]
-> First check the overflow tank. Cold engine, wet spots underneath. [pause]
-> Confidence ninety percent. Want me to look up a thermostat?"*
+> *Speak a symptom. Get a ranked diagnosis with field tests — hands-free, in under 3 seconds.*
+>
+> Wrench Voice understands natural mechanic language: symptoms, engine families, symptoms under specific conditions. It returns ranked causes, confidence scores, and step-by-step field tests without opening a manual or touching a keyboard.
+>
+> *Example: "Misfire on cold start, B18C1" → returns ignition coil, injector, compression test order, and parts lookup — all by voice.*
 
 - 10 symptoms → 45+ ranked causes
 - 23 engine families with torque specs, known issues, fluid capacities
@@ -83,6 +83,9 @@ Plug in an ELM327 adapter. Scan codes instantly.
 - **Instant answers** — No flipping through manuals or waiting for web pages.
 - **Offline capable** — Works in shops with no internet. All knowledge is local.
 - **Combustion-only focus** — No EV confusion. Every answer is ICE-relevant.
+- **Live microphone** — USB mic auto-calibrates to shop noise. Silence detection stops recording when you stop speaking.
+- **Barcode scan by voice** — Scan a part box, hear instantly: "NGK plug, twelve on hand, bin A3-2."
+- **Garage-tuned audio** — TTS voice is compressed, gated, and EQ'd to punch through air compressors and impact guns.
 
 ### For the Shop Owner
 - **Reduce idle bay time** — Parts pre-checked before job confirmation.
@@ -91,6 +94,8 @@ Plug in an ELM327 adapter. Scan codes instantly.
 - **Improve cash flow** — SMS billing reminders reduce accounts receivable days.
 - **Know your numbers** — Job profitability, technician efficiency, margin by engine family.
 - **Protect from liability** — Photo-documented pre-existing condition on every job.
+- **Barcode-driven inventory** — Scan parts in, scan parts out. No typing. No mistakes.
+- **Voice-printed inspection reports** — Customer gets a PDF with your voice annotations embedded.
 
 ### For the Customer
 - **Transparency** — See photos of their worn brake pads. Understand why.
@@ -270,6 +275,9 @@ Auto-triggers on mechanic keywords. Provides voice-optimized responses:
 | `cost_analyzer` | Actual vs. estimated costs, margins | Know which jobs make money |
 | `part_scorer` | Brand reputation + return rate + warranty scoring | Buy quality parts, reduce comebacks |
 | `voice_gateway` | faster-whisper STT + piper-tts, kept hot in RAM | Sub-second voice response |
+| `microphone_input` | Live USB/ALSA mic capture with silence detection | Hands-free in noisy shop |
+| `barcode_scanner` | USB HID + camera barcode for parts lookup | Instant inventory, no typing |
+| `audio_effects` | Normalization, EQ, compression, gate for TTS | Audible over air compressors |
 | `quickbooks_sync` | Invoice push to QuickBooks (stub) | Eliminate double-entry |
 | `carfax_stub` | Vehicle history lookup (stub) | Verify odometer, check for frame damage |
 | `calendar_stub` | Google/Outlook sync (stub) | Tech schedules on their phones |
@@ -435,7 +443,7 @@ Customer replies:
 - [x] Parts planner with BOM expansion
 - [x] OBD-II bridge (DTCs, freeze frame, live data, mock mode)
 - [x] Bay scheduling with technician assignment
-- [x] Inventory manager with bin tracking
+- [x] Inventory manager with bin tracking + barcode support
 - [x] Price tracker with 90-day history and sale detection
 - [x] Delivery predictor with learned ETAs
 - [x] Auto-order generator with free-ship consolidation
@@ -447,12 +455,13 @@ Customer replies:
 - [x] Job cost analyzer (estimate vs. actual)
 - [x] Part quality scorer (brand + warranty + returns)
 - [x] Voice gateway (faster-whisper + piper-tts, hot-resident)
+- [x] Microphone input (ALSA/PyAudio/WAV)
+- [x] Barcode scanner (USB HID + camera)
+- [x] Audio effects (EQ, compression, gate for noisy shops)
 - [x] Hermes skill integration
 
 ### In Progress
-- [ ] Live microphone input (ALSA/PyAudio capture)
 - [ ] Bluetooth OBD adapter support
-- [ ] Barcode scanner integration for inventory
 - [ ] QuickBooks Online OAuth2 connection
 - [ ] Google Calendar API sync
 - [ ] Twilio webhook handler for inbound SMS

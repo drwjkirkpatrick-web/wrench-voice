@@ -63,8 +63,9 @@ class TestInventoryManager:
         import uuid
         inv = InventoryManager()
         sku = f"NGK-{uuid.uuid4().hex[:8]}"
-        item = inv.receive(sku, "BKR7E", "Spark Plug", 12, 6.50, "RockAuto", "A3-2", reorder_min=4, reorder_max=24)
+        item = inv.receive(sku, "BKR7E", "Spark Plug", 12, 6.50, "RockAuto", "A3-2", reorder_min=4, reorder_max=24, barcode="012345678901")
         assert item.qty_on_hand == 12
+        assert item.barcode == "012345678901"
         assert item.needs_reorder() == False
 
     def test_consume_and_shortage(self):
@@ -94,6 +95,17 @@ class TestInventoryManager:
         inv.receive(sku, "S-001", "Special Bolt", 20, 1.50, "OReilly", "D4-1")
         results = inv.search("Special")
         assert len(results) >= 1
+
+    def test_barcode_lookup(self):
+        from wrench_voice.inventory_manager import InventoryManager
+        import uuid
+        inv = InventoryManager()
+        sku = f"BC-{uuid.uuid4().hex[:8]}"
+        inv.receive(sku, "BP-001", "Brake Pad", 8, 45.0, "Advance", "F2-1", barcode="987654321098")
+        item = inv.get_item_by_barcode("987654321098")
+        assert item is not None
+        assert item.part_name == "Brake Pad"
+        assert item.barcode == "987654321098"
 
 
 class TestPriceTracker:
