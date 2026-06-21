@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wrench-voice"
-version = "0.1.0"
-description = "Hands-free voice assistant for combustion engine repair — diagnostics, parts lookup, and job planning."
-readme = "README.md"
+version = "0.2.0"
 requires-python = ">=3.10"
+description = "Hands-free voice assistant + shop management for combustion engine repair"
+readme = "README.md"
 license = {text = "MIT"}
 authors = [
     {name = "Walker Kirkpatrick", email = "drwjkirkpatrick@gmail.com"},
