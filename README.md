@@ -19,7 +19,7 @@ Running a small shop means juggling three jobs at once:
 **Wrench Voice automates the desk and the phone so the mechanic stays under the hood.**
 
 It runs on a Raspberry Pi in the shop corner with a USB microphone.
-Speak naturally. Get answers instantly. Hands stay clean. Eyes stay on the engine.
+Speak naturally. Get answers instantly. Hands stay free. Eyes stay on the engine.
 
 ---
 
