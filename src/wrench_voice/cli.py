@@ -101,6 +101,89 @@ def obd(port: str, mock: bool) -> None:
 
 
 @main.group()
+def workflow():
+    """Step-by-step repair workflow with tool matching and predictions."""
+    pass
+
+@workflow.command("run")
+@click.option("--engine", "-e", required=True, help="Engine slug (e.g. toyota_5sfe)")
+@click.option("--symptom", "-s", required=True, help="Symptom/procedure slug (e.g. water_pump_timing_belt)")
+@click.option("--step", type=int, default=1, help="Start at step N")
+def workflow_run(engine: str, symptom: str, step: int) -> None:
+    from wrench_voice.repair_workflow import RepairWorkflowRegistry, WorkflowTracker
+    from wrench_voice.workflow_predictor import NextStepPredictor
+    reg = RepairWorkflowRegistry()
+    wf = reg.get(engine, symptom)
+    if not wf:
+        click.echo(f"No workflow found for {engine} + {symptom}")
+        return
+    tracker = WorkflowTracker(wf)
+    # Advance to requested step
+    for _ in range(step - 1):
+        if tracker.has_next():
+            tracker.advance()
+    current = tracker.current_step
+    if not current:
+        click.echo("No more steps.")
+        return
+    predictor = NextStepPredictor(tracker)
+    summary = predictor.predict_next_step_summary()
+    click.echo(f"Step {current.step_number}: {current.title}")
+    click.echo(current.description)
+    if current.safety_warnings:
+        click.echo("\n⚠️ Warnings:")
+        for w in current.safety_warnings:
+            click.echo(f"  - {w}")
+    if current.fasteners:
+        click.echo("\n🔩 Fasteners:")
+        for f in current.fasteners:
+            click.echo(f"  - {f.description}: {f.drive or f.size} → {f.torque_str()}")
+    click.echo(f"\n🔧 Tools: {', '.join(summary['tools_now'])}")
+    click.echo(f"⏱️  Time remaining: {summary['time_remaining_min']} min")
+    click.echo(f"📊 Progress: {summary['progress_pct']}%")
+    if summary['critical_lookahead']:
+        click.echo(f"\n🚨 CRITICAL LOOKAHEAD: {summary['critical_lookahead']}")
+
+@workflow.command("predict")
+@click.option("--engine", "-e", required=True)
+@click.option("--symptom", "-s", required=True)
+def workflow_predict(engine: str, symptom: str) -> None:
+    from wrench_voice.repair_workflow import RepairWorkflowRegistry, WorkflowTracker
+    from wrench_voice.workflow_predictor import NextStepPredictor
+    reg = RepairWorkflowRegistry()
+    wf = reg.get(engine, symptom)
+    if not wf:
+        click.echo(f"No workflow found for {engine} + {symptom}")
+        return
+    tracker = WorkflowTracker(wf)
+    predictor = NextStepPredictor(tracker)
+    for p in predictor.predict():
+        icon = {"tool": "🔧", "fastener": "🔩", "warning": "🚨", "procedure": "📋", "time": "⏱️"}.get(p.category, "•")
+        click.echo(f"{icon} [{p.urgency.upper()}] {p.message}")
+
+@workflow.command("markdown")
+@click.option("--engine", "-e", required=True)
+@click.option("--symptom", "-s", required=True)
+def workflow_markdown(engine: str, symptom: str) -> None:
+    from wrench_voice.repair_workflow import RepairWorkflowRegistry
+    reg = RepairWorkflowRegistry()
+    wf = reg.get(engine, symptom)
+    if not wf:
+        click.echo(f"No workflow found for {engine} + {symptom}")
+        return
+    click.echo(wf.to_markdown())
+
+@workflow.command("list")
+def workflow_list() -> None:
+    from wrench_voice.repair_workflow import RepairWorkflowRegistry
+    reg = RepairWorkflowRegistry()
+    click.echo("Built-in workflows:")
+    # List all workflows in registry
+    for slug, wf in reg._workflows.items():
+        click.echo(f"  {slug}: {wf.title}")
+
+
+@main.group()
 def schedule():
     """Shop scheduling and bay management."""
     pass

@@ -375,3 +375,194 @@ class VoiceGateway:
             "daemon_running": self._daemon_running,
             "cache_dir": str(self.cache_dir),
         }
+
+
+# ─── Workflow Voice Session ────────────────────────────────────────────────────
+
+class WorkflowVoiceSession:
+    """
+    Hands-free voice-guided repair session.
+    Combines VoiceGateway + WorkflowTracker + OllamaBridge for a mechanic
+    who can't touch a screen while working.
+
+    Usage:
+        from wrench_voice.repair_workflow import RepairWorkflowRegistry, WorkflowTracker
+        from wrench_voice.voice_gateway import WorkflowVoiceSession
+
+        reg = RepairWorkflowRegistry()
+        wf = reg.get("toyota_5sfe", "water_pump_timing_belt")
+        tracker = WorkflowTracker(wf)
+
+        session = WorkflowVoiceSession(tracker, voice_gateway=VoiceGateway(mock_mode=True))
+        session.warmup()
+
+        # Speak current step
+        session.speak_current_step()
+
+        # Listen for command (in real use, from microphone)
+        session.handle_voice_command("What size is the crank bolt?")
+    """
+
+    def __init__(
+        self,
+        tracker: "WorkflowTracker",
+        voice_gateway: VoiceGateway | None = None,
+        ollama_bridge: Any = None,
+        verbose: bool = True,
+    ) -> None:
+        self.tracker = tracker
+        self.voice = voice_gateway or VoiceGateway(mock_mode=True)
+        self.verbose = verbose
+        # Lazy import to avoid circular dependency
+        if ollama_bridge is None:
+            try:
+                from .ollama_bridge import OllamaBridge, WorkflowQAContext
+                self.ollama = OllamaBridge(mock_mode=True)
+                self._ctx_cls = WorkflowQAContext
+            except ImportError:
+                self.ollama = None
+                self._ctx_cls = None
+        else:
+            self.ollama = ollama_bridge
+
+    def warmup(self) -> None:
+        self.voice.warmup()
+
+    def _build_context(self) -> Any:
+        """Build WorkflowQAContext from current tracker state."""
+        if self._ctx_cls is None:
+            return None
+        step = self.tracker.current_step
+        if not step:
+            return None
+        return self._ctx_cls(
+            engine_slug=self.tracker.workflow.engine_slug,
+            symptom=self.tracker.workflow.symptom,
+            current_step=step.step_number,
+            total_steps=len(self.tracker.workflow.steps),
+            step_title=step.title,
+            step_description=step.description,
+            fasteners=[
+                {"description": f.description, "drive": f.drive, "torque": f.torque_str()}
+                for f in step.fasteners
+            ],
+            tools=step.required_tools,
+            warnings=step.safety_warnings,
+            progress_pct=self.tracker.progress_pct(),
+        )
+
+    def speak(self, text: str) -> None:
+        """Speak text via TTS and optionally print."""
+        if self.verbose:
+            print(f"🗣️  {text}")
+        tts = self.voice.synthesize(text)
+        # In a real system, play tts.audio_bytes via speaker
+        # For now, we just print (mock_mode returns None bytes)
+
+    def speak_current_step(self) -> None:
+        """Announce current step with key details."""
+        step = self.tracker.current_step
+        if not step:
+            self.speak("Job complete. No more steps.")
+            return
+
+        lines = [f"Step {step.step_number}: {step.title}."]
+        if step.fasteners:
+            lines.append("Fasteners you will need:")
+            for f in step.fasteners[:3]:
+                lines.append(f"  {f.description}: {f.drive or f.size} at {f.torque_str()}")
+        if step.safety_warnings:
+            lines.append("Warning: " + step.safety_warnings[0])
+        if step.required_tools:
+            lines.append(f"Tools: {', '.join(step.required_tools[:5])}")
+
+        self.speak(" ".join(lines))
+
+    def speak_predictions(self) -> None:
+        """Announce upcoming tools/fasteners/warnings."""
+        from .workflow_predictor import NextStepPredictor
+        predictor = NextStepPredictor(self.tracker)
+        preds = predictor.predict(lookahead=2)
+        if not preds:
+            return
+        critical = [p for p in preds if p.urgency == "critical"]
+        if critical:
+            self.speak(f"Critical warning ahead: {critical[0].message}")
+        tools = [p for p in preds if p.category == "tool"]
+        if tools:
+            self.speak(f"Coming up: {tools[0].message}")
+
+    def handle_voice_command(self, text: str) -> dict[str, Any]:
+        """
+        Parse a transcribed voice command and execute it.
+        Returns a dict describing what happened.
+        """
+        if self.ollama is None:
+            return {"error": "Ollama bridge not available"}
+
+        ctx = self._build_context()
+        nlu = self.ollama.transcribe_to_intent(text, ctx)
+
+        action = nlu.action
+        params = nlu.action_params
+
+        if action == "goto":
+            target = params.get("step", 1)
+            # Navigate to target step
+            while self.tracker.current_step and self.tracker.current_step.step_number < target:
+                self.tracker.advance()
+            while self.tracker.current_step and self.tracker.current_step.step_number > target:
+                self.tracker.go_back()
+            self.speak_current_step()
+            return {"action": "goto", "step": target, "spoken": True}
+
+        elif action == "advance":
+            self.tracker.advance()
+            self.speak_current_step()
+            return {"action": "advance", "spoken": True}
+
+        elif action == "back":
+            self.tracker.go_back()
+            self.speak_current_step()
+            return {"action": "back", "spoken": True}
+
+        elif action == "repeat":
+            self.speak_current_step()
+            return {"action": "repeat", "spoken": True}
+
+        elif action in ("what_size", "what_torque", "what_tool"):
+            # Answer the question using procedure Q&A
+            if ctx:
+                answer = self.ollama.answer_procedure_question(text, ctx)
+                self.speak(answer.response)
+                return {"action": action, "response": answer.response, "spoken": True}
+            else:
+                self.speak("I don't have workflow context for that question.")
+                return {"action": action, "error": "no_context"}
+
+        elif action == "status":
+            summary = self.tracker.status_summary()
+            msg = (
+                f"Progress {summary['progress_pct']:.0f} percent. "
+                f"Step {summary['current_step']}: {summary['current_title']}. "
+                f"Time remaining: {summary['time_remaining_min']} minutes."
+            )
+            self.speak(msg)
+            return {"action": "status", "spoken": True}
+
+        else:
+            # Unknown — try general QA
+            if ctx:
+                answer = self.ollama.answer_procedure_question(text, ctx)
+                self.speak(answer.response)
+                return {"action": "qa", "response": answer.response, "spoken": True}
+            self.speak("I didn't understand that command. Try 'next step', 'go to step 5', or 'what size is the crank bolt?'")
+            return {"action": "unknown", "raw_intent": nlu.intent}
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "tracker_progress_pct": self.tracker.progress_pct(),
+            "current_step": self.tracker.current_step.step_number if self.tracker.current_step else None,
+            "voice_warm": self.voice.is_warm(),
+            "ollama_available": self.ollama.is_available() if self.ollama else False,
+        }

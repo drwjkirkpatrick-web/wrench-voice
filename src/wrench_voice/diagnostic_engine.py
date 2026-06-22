@@ -659,6 +659,99 @@ SYMPTOM_CAUSES: dict[str, list[Cause]] = {
             severity="normal",
         ),
     ],
+
+    # ── Subaru-Specific ──────────────────────────────────────────────────────────
+    # These are folded into the main symptoms above via engine_family filtering,
+    # but we also keep standalone symptom slugs for direct Subaru queries.
+    "subaru_head_gasket": [
+        Cause(
+            name="External head gasket leak (Subaru EJ25 SOHC)",
+            prevalence=0.85,
+            engine_families=["subaru_ej25_sohc", "subaru_ej25_dohc", "subaru_ej20"],
+            field_tests=[
+                "Look for coolant weep at head-to-block seam on cylinder 2 or 4 bank",
+                "UV dye in coolant — blacklight inspection of block valley",
+                "Combustion gas tester — may be negative (external leak, not into combustion)",
+                "Pressure-test cooling system: pressure drops without visible external leak = head gasket",
+            ],
+            repair_procedure=[
+                "WARNING: MLS (Multi-Layer Steel) gasket required. Do NOT use composite.",
+                "1. Remove intake manifold, exhaust manifolds, timing belt, camshafts",
+                "2. Remove cylinder heads. Inspect block deck and head for flatness (< 0.002\" warp)",
+                "3. Machine shop: resurface if needed. Do NOT remove more than 0.004\"",
+                "4. Clean block threads — chase with tap. Subaru threads are fine and strip easily.",
+                "5. Install new MLS head gaskets (marked UP). Use Subaru OEM or Six-Star.",
+                "6. Torque in stages per factory sequence. Phase 1 (1998–1999): 10mm bolts. Phase 2+: 11mm + 14mm.",
+                "7. Reassemble timing belt with new tensioner and water pump.",
+                "8. Refill with Subaru blue coolant. Burp thoroughly — heater on max, front end raised.",
+            ],
+            parts_needed=["MLS head gasket set", "head bolts", "timing belt kit", "water pump", "Subaru coolant"],
+            severity="urgent",
+        ),
+    ],
+    "subaru_timing_belt": [
+        Cause(
+            name="Timing belt failure (all EJ engines)",
+            prevalence=0.70,
+            engine_families=["subaru_ej18", "subaru_ej22", "subaru_ej25_sohc", "subaru_ej25_dohc", "subaru_ej20", "subaru_ea82"],
+            field_tests=[
+                "Remove timing cover — inspect belt for cracks, glazing, missing teeth",
+                "Check tensioner plunger extension — should be within spec marks",
+                "Crank engine by hand — any valve contact feel?",
+            ],
+            repair_procedure=[
+                "WARNING: ALL Subaru EJ engines are INTERFERENCE. Belt failure = bent valves.",
+                "1. Replace belt, tensioner, idler pulleys, and water pump as a kit.",
+                "2. Align crank mark to timing cover arrow.",
+                "3. Align cam sprocket dots to notches on backing plate.",
+                "4. Ensure belt is tight on non-tensioned side before releasing tensioner.",
+                "5. Rotate engine by hand two full revolutions. Recheck alignment.",
+                "6. If belt broke while running: leak-down test all cylinders before reassembly.",
+            ],
+            parts_needed=["timing belt kit", "tensioner", "idler", "water pump", "seals"],
+            severity="critical",
+        ),
+    ],
+    "subaru_knock": [
+        Cause(
+            name="Rod knock from oil starvation (Subaru boxer)",
+            prevalence=0.45,
+            engine_families=["subaru_ej25_sohc", "subaru_ej25_dohc", "subaru_ej20", "subaru_ez36"],
+            field_tests=[
+                "Knock increases with RPM and load",
+                "Knock present even when warm",
+                "Oil pressure at hot idle < 14 psi = concern",
+                "Inspect oil pickup tube — clogged with RTV or debris?",
+            ],
+            repair_procedure=[
+                "WARNING: Catastrophic failure imminent. Do not drive.",
+                "1. Confirm with stethoscope — loudest at oil pan / block seam on cyl 2 or 4",
+                "2. Drop oil pan. Inspect pickup tube and baffle. Clean or replace.",
+                "3. Remove affected rod cap. Inspect bearing with plastigage.",
+                "4. If crank is scored: engine rebuild or short block replacement.",
+                "5. On turbo models: add oil pan baffle to prevent starvation in corners.",
+            ],
+            parts_needed=["rod bearings", "oil pickup tube", "oil pan baffle", "short block maybe"],
+            severity="critical",
+        ),
+        Cause(
+            name="Piston slap (Subaru FB/FA cold start)",
+            prevalence=0.25,
+            engine_families=["subaru_fb25", "subaru_fb20", "subaru_fa20", "subaru_fa24"],
+            field_tests=[
+                "Knock disappears after 5–10 min warm-up",
+                "Louder at cold start, gone at operating temp",
+            ],
+            repair_procedure=[
+                "Often cosmetic on high-mileage FB/FA engines.",
+                "1. Use correct viscosity oil (0W-20 for FB/FA)",
+                "2. Monitor oil consumption",
+                "3. Full repair = piston + bore overhaul",
+            ],
+            parts_needed=["pistons", "rings", "hone job"],
+            severity="normal",
+        ),
+    ],
 }
 
 
@@ -691,6 +784,45 @@ ENGINE_FAMILY_ALIASES: dict[str, list[str]] = {
     "vw_ea888":       ["ea888", "2.0t", "tsi", "golf gti", "audi a4 2.0t"],
     "nissan_ka24de":  ["ka24", "ka24de", "nissan frontier", "nissan xterra", "2.4 dohc"],
     "mazda_13b":      ["13b", "13b-rew", "rx-7", "rx-8", "rotary"],
+    # ── Subaru ───────────────────────────────────────────────────────────────
+    "subaru_ej22":    ["ej22", "2.2 subaru", "legacy 2.2"],
+    "subaru_ej25_sohc": ["ej25 sohc", "ej25", "2.5 sohc subaru", "forester 2.5", "outback 2.5 2000"],
+    "subaru_ej25_dohc": ["ej25 dohc", "ej257", "wrx sti 2.5", "sti engine"],
+    "subaru_ej20":    ["ej20", "ej205", "wrx 2.0", "wrx engine"],
+    "subaru_ea82":    ["ea82", "loyale", "gl"],
+    "subaru_ez36":    ["ez36", "h6 subaru", "3.6r", "outback 3.6"],
+    "subaru_fa20":    ["fa20", "brz engine", "86 engine", "fr-s engine"],
+    "subaru_fa24":    ["fa24", "wrx 2022", "brz 2022"],
+    "subaru_fb25":    ["fb25", "forester 2011", "outback 2013"],
+    "subaru_fb20":    ["fb20", "impreza 2.0", "crosstrek 2.0"],
+    "subaru_cb18":    ["cb18", "ascent engine", "outback turbo"],
+    "subaru_ej18":    ["ej18", "1.8 subaru"],
+    # ── Early American ─────────────────────────────────────────────────────
+    "ford_model_t":   ["model t", "tin lizzie"],
+    "ford_model_a":   ["model a", "a-bone"],
+    "ford_flathead_v8": ["flathead", "flatty", "ford v8 1932", "mercury flathead"],
+    "ford_y_block":   ["y-block", "ford 292", "ford 312", "thunderbird 1955"],
+    "ford_fe":        ["fe", "ford 390", "ford 427", "ford 428", "side oiler", "galaxie 390"],
+    "ford_windsor":   ["windsor", "302", "351w", "289", "5.0", "mustang 5.0"],
+    "ford_cleveland": ["351c", "351m", "400 ford", "cleveland"],
+    "ford_triton":    ["triton", "4.6", "5.4", "expedition 5.4", "f-150 5.4", "f-150 4.6", "crown vic 4.6", "modular ford"],
+    "ford_ecoboost":  ["ecoboost", "2.0 ecoboost", "2.3 ecoboost", "3.5 ecoboost", "2.7 ecoboost", "f-150 ecoboost", "focus st", "mustang ecoboost"],
+    "chevy_stovebolt_6": ["stovebolt", "chevy 216", "chevy 235", "chevy 261", "inline 6 chevy old"],
+    # ── Japanese ───────────────────────────────────────────────────────────
+    "nissan_sr20":    ["sr20", "sr20det", "sr20de", "silvia", "sentra se-r"],
+    "nissan_vg":      ["vg30", "vg33", "300zx", "pathfinder 3.3", "frontier 3.3"],
+    "nissan_vq35":    ["vq35", "vq35de", "350z engine", "altima 3.5", "maxima 3.5"],
+    "mazda_bp":       ["bp", "b6", "miata 1.8", "mx-5 engine", "protege 1.8"],
+    "mazda_mzr":      ["mzr", "l3", "duratec 2.3", "mazda 3 2.3", "mazda 6 2.3"],
+    "mitsubishi_4g63": ["4g63", "evo engine", "eclipse turbo", "4g63t"],
+    # ── European ───────────────────────────────────────────────────────────
+    "bmw_n54":        ["n54", "335i engine", "135i engine", "535i engine"],
+    "bmw_n55":        ["n55", "335i 2011", "x5 35i"],
+    "mercedes_m112":  ["m112", "m113", "e320 engine", "ml320 engine", "c320 engine"],
+    # ── Diesel ─────────────────────────────────────────────────────────────
+    "cummins_59":     ["cummins", "5.9 cummins", "6.7 cummins", "12 valve", "24 valve", "ram 2500", "ram diesel"],
+    "ford_73_powerstroke": ["7.3", "7.3 powerstroke", "powerstroke", "f-250 7.3"],
+    "ford_60_powerstroke": ["6.0 powerstroke", "6.0", "bulletproof"],
 }
 
 

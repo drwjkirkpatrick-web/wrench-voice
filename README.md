@@ -132,7 +132,17 @@ wrench obd --port /dev/ttyUSB0  # Real ELM327 adapter
 wrench parts thermostat --make Toyota --year 1996
 
 # Search knowledge base
-timing chain torque specs
+wrench kb search timing chain torque specs
+
+# Step-by-step repair workflow (NEW)
+wrench workflow list                           # Show all available workflows
+wrench workflow run -e toyota_5sfe -s water_pump_timing_belt --step 7  # Show step 7 with exact fasteners
+wrench workflow predict -e toyota_5sfe -s water_pump_timing_belt       # Predict next tools/fasteners
+wrench workflow markdown -e toyota_5sfe -s water_pump_timing_belt    # Export full procedure
+
+# Voice-guided repair session (NEW — requires Ollama)
+wrench voice repair -e toyota_5sfe -s water_pump_timing_belt
+# Then speak: "next step", "what size is the tensioner bolt?", "go to step 5"
 
 # Shop operations
 wrench schedule board              # Today's bay assignments
@@ -258,7 +268,12 @@ Auto-triggers on mechanic keywords. Provides voice-optimized responses:
 | Module | What It Does | Benefit |
 |--------|------------|---------|
 | `diagnostic_engine` | Symptom → ranked causes → field tests → repair | Instant diagnosis without manuals |
-| `kb` | 23 engine families, torque specs, fluid capacities, known issues | Offline access to shop manual data |
+| `kb` | **54 engine families**, torque specs, fluid capacities, known issues | Offline access to shop manual data |
+| `vehicle_specs_db` | SQLite database: 183 vehicles, 127 torque specs, 122 fluids | Query exact specs by engine code or alias |
+| `repair_workflow` | Step-by-step repair guidance with tool matching + fastener tracking | Never miss a torque spec or bolt size |
+| `workflow_predictor` | Predict next tool, fastener, warning before mechanic asks | Saves 5–10 min/job fetching tools |
+| `ollama_bridge` | Local LLM for voice intent parsing + procedure Q&A | Hands-free natural language commands |
+| `photo_hint_manager` | Photos, diagrams, videos per step with bounding boxes | See what you're looking for |
 | `parts_finder` | Multi-supplier lookup with SQLite cache | Best price in seconds |
 | `parts_planner` | BOM expansion + timeline + cost estimate | Accurate quotes, fewer surprises |
 | `obd_bridge` | DTC reader, freeze frame, live data, readiness | Codes explained in plain English |
@@ -278,13 +293,16 @@ Auto-triggers on mechanic keywords. Provides voice-optimized responses:
 | `microphone_input` | Live USB/ALSA mic capture with silence detection | Hands-free in noisy shop |
 | `barcode_scanner` | USB HID + camera barcode for parts lookup | Instant inventory, no typing |
 | `audio_effects` | Normalization, EQ, compression, gate for TTS | Audible over air compressors |
+| `ollama_bridge` | Local LLM integration (Ollama/qwen2.5-cpu) for NLU + Q&A | Understands mechanic speech offline |
+| `workflow_predictor` | Next-step prediction: tools, fasteners, warnings | Proactive guidance |
+| `photo_hint_manager` | Visual hints: photos, diagrams, videos per step | See before you do |
 | `quickbooks_sync` | Invoice push to QuickBooks (stub) | Eliminate double-entry |
 | `carfax_stub` | Vehicle history lookup (stub) | Verify odometer, check for frame damage |
 | `calendar_stub` | Google/Outlook sync (stub) | Tech schedules on their phones |
 
 ---
 
-## Knowledge Base: 23 Engine Families
+## Knowledge Base: 54 Engine Families
 
 | Engine | Era | Vehicles |
 |--------|-----|----------|
@@ -298,6 +316,7 @@ Auto-triggers on mechanic keywords. Provides voice-optimized responses:
 | **Toyota 3S-GTE** | 1986–2007 | Celica GT-Four, MR2 Turbo |
 | **Toyota 1UZ-FE / 2UZ-FE** | 1989–2009 | LS400, Land Cruiser, Tundra, Sequoia |
 | **Toyota 7M-GE/GTE** | 1986–1992 | Supra MK3, Cressida |
+| **Toyota 5S-FE** | 1990–2001 | Camry, Celica, MR2 |
 | **Honda B-Series** | 1988–2001 | Civic, Integra, CR-V |
 | **Honda D-Series** | 1984–2005 | Civic, CR-X, Del Sol |
 | **Honda F-Series** | 1989–2002 | Accord, Prelude, Odyssey |
@@ -305,12 +324,37 @@ Auto-triggers on mechanic keywords. Provides voice-optimized responses:
 | **Honda J-Series** | 1996–present | Accord, Odyssey, Pilot, TL, MDX |
 | **Honda K-Series** | 2001–present | Civic, CR-V, Accord, TSX, RSX |
 | **Honda R-Series** | 2006–2015 | Civic 1.8 |
+| **Subaru EJ18/EJ22** | 1980–1994 | Loyale, GL, DL |
+| **Subaru EJ25 SOHC** | 1998–2010 | Outback, Legacy, Forester, Impreza |
+| **Subaru EJ25 DOHC** | 1996–1999 | Legacy GT, Outback |
+| **Subaru EJ20** | 1993–2013 | WRX, STI |
+| **Subaru EZ36** | 2009–2019 | Outback, Legacy |
+| **Subaru FA20** | 2012–present | BRZ, Toyota 86 |
+| **Subaru FB25** | 2010–present | Forester, Outback, Legacy |
+| **Subaru CB18** | 2020–present | Crosstrek |
+| **Ford Model T/A** | 1908–1931 | Universal |
+| **Ford Flathead V8** | 1932–1953 | All Ford cars/trucks |
+| **Ford Y-block** | 1954–1964 | Thunderbird, F-100 |
+| **Ford FE** | 1958–1976 | Galaxie, Mustang, F-100 |
+| **Ford Windsor** | 1961–2001 | Mustang, F-150, Bronco |
+| **Ford Cleveland** | 1969–1982 | Mustang, Torino |
 | **Ford 300 I6** | 1965–1996 | F-150, E-150 |
+| **Ford Triton (Modular)** | 1997–present | F-150, Expedition, E-Series |
+| **Ford EcoBoost** | 2009–present | F-150, Escape, Focus RS |
 | **Chevy Small Block V8** | 1955–2003 | Trucks, Camaro, Corvette |
 | **Jeep 4.0 I6** | 1987–2006 | Wrangler, Cherokee |
 | **Nissan KA24DE** | 1997–2004 | Frontier, Xterra |
+| **Nissan SR20DE/DET** | 1989–2002 | Sentra SE-R, 240SX, Silvia |
+| **Nissan VQ35DE** | 2002–present | 350Z, G35, Altima, Maxima |
 | **Mazda Rotary 13B** | 1974–2012 | RX-7, RX-8 |
+| **Mazda BP/MZR** | 1990–2011 | Miata, Protege, Mazda3 |
+| **Mitsubishi 4G63** | 1989–2003 | Eclipse, Lancer Evo |
 | **BMW M54** | 2000–2006 | E46, E39, X3, Z4 |
+| **BMW N54/N55** | 2006–2016 | 335i, 135i, 535i |
+| **Mercedes M112** | 1997–2011 | E320, ML320, C320 |
+| **VW EA888** | 2008–present | GTI, Jetta, Audi A4 |
+| **Cummins 5.9 / 6.7** | 1989–present | Ram 2500/3500 |
+| **Ford 7.3 / 6.0 Power Stroke** | 1994–2010 | F-250, F-350, E-Series |
 
 Each file includes: overview, known issues, torque specs tables, fluid capacities, maintenance schedule, common procedures, special tools, and common mistakes.
 
@@ -326,6 +370,7 @@ Each file includes: overview, known issues, torque specs tables, fluid capacitie
 | Web Scraping | httpx + BeautifulSoup4 |
 | STT | faster-whisper (default), openai-whisper |
 | TTS | piper-tts (default), coqui-tts, pyttsx3 |
+| Local LLM | Ollama (qwen2.5-cpu, llama3.2, etc.) |
 | Testing | pytest |
 | Package | setuptools (PEP 621) |
 
@@ -382,9 +427,11 @@ All tests run in mock mode or with temp databases. No shop data is touched.
 export WRENCH_CACHE_DIR="$HOME/.cache/wrench-voice"
 export WRENCH_STT_BACKEND="faster-whisper"  # or "mock"
 export WRENCH_TTS_BACKEND="piper"           # or "mock"
+export WRENCH_OLLAMA_MODEL="qwen2.5-cpu:latest"  # Local LLM model (optional)
+export OLLAMA_HOST="http://localhost:11434"       # Ollama server URL (optional)
 export TWILIO_SID="your_sid"
 export TWILIO_TOKEN="your_token"
-export TWILIO_FROM="+15555555555"
+export TWILIO_FROM="+155****5555"
 export SHOP_PHONE="503-555-0100"
 export SHOP_NAME="Wrench Auto"
 
@@ -417,6 +464,65 @@ audio = gw.synthesize("Thermostat replacement complete.")  # ~300ms
 
 ---
 
+## Repair Workflow System (NEW)
+
+Step-by-step guided repair with exact tool and fastener matching. The mechanic never touches a screen.
+
+### What It Does
+- **Exact fasteners:** Every bolt, nut, and clip with size, drive type, torque (ft-lb + Nm), torque type, quantity, and location
+- **Tool matching:** "Socket set" resolves to "10mm, 12mm, 14mm socket" per engine family
+- **Progress tracking:** State machine knows where you are, what you've done, what's next
+- **Predictions:** "Coming up: 14mm socket, torque wrench, breaker bar" — before you ask
+- **Voice commands:** "Next step", "what size is the crank bolt?", "go to step 7", "status"
+- **Safety warnings:** Critical alerts flagged by urgency — interference engines, TTY bolts, hot coolant
+
+### Example: 1998 Camry Water Pump + Timing Belt
+
+```bash
+# List all workflows for this engine
+wrench workflow list
+
+# Show step 7 with exact fasteners
+wrench workflow run -e toyota_5sfe -s water_pump_timing_belt --step 7
+
+# Predict what's coming up
+wrench workflow predict -e toyota_5sfe -s water_pump_timing_belt
+
+# Export full 16-step markdown procedure
+wrench workflow markdown -e toyota_5sfe -s water_pump_timing_belt
+```
+
+**16 steps, 62 fasteners specified, every torque value included.** Critical warnings for interference engine, impact gun misuse, and tensioner spring handling. Includes coolant bleed procedure (air pockets cause overheating on this engine).
+
+### Voice-Guided Session
+
+```bash
+wrench voice repair -e toyota_5sfe -s water_pump_timing_belt
+```
+
+Then speak naturally:
+- *"Next step"* — advances and announces current step with tools/fasteners
+- *"What size is the tensioner bolt?"* — answers from current step context
+- *"Go to step 5"* — jumps to that step
+- *"What's coming up?"* — speaks predictions (critical warnings first)
+- *"Status"* — "Progress 37 percent. Step 7: Remove Timing Belt..."
+
+Requires local Ollama (`qwen2.5-cpu:latest` or any installed model). Falls back to mock mode for testing.
+
+### Available Workflows
+
+| Workflow | Engine | Steps | Skill | Time |
+|----------|--------|-------|-------|------|
+| Water pump + timing belt | Toyota 5S-FE | 16 | Intermediate | 225 min |
+| Valve cover gasket | Toyota 5S-FE | 7 | Beginner | 70 min |
+| Spark plugs | Toyota 5S-FE | 5 | Beginner | 35 min |
+| Head gasket | Subaru EJ25 SOHC | 5 | Advanced | 170 min |
+| Timing belt | Subaru EJ25 SOHC | 5 | Intermediate | 95 min |
+| Disc brake pads + rotors | Generic | 6 | Beginner | 75 min |
+| Front wheel bearing | Generic | 5 | Intermediate | 75 min |
+
+---
+
 ## SMS Billing Workflow
 
 ```
@@ -438,7 +544,8 @@ Customer replies:
 
 ### Complete ✅
 - [x] Core diagnostic engine (10 symptoms, 45+ causes)
-- [x] Knowledge base (23 engine families: 10 Toyota, 6 Honda, 7 other)
+- [x] Knowledge base (**54 engine families**: Toyota, Honda, Subaru, Ford, Chevy, Jeep, Nissan, Mazda, BMW, Mercedes, VW, Cummins)
+- [x] Vehicle specs database (SQLite: 183 vehicles, 127 torque specs, 122 fluids, 97 maintenance intervals, 115 issues)
 - [x] Parts finder with SQLite caching
 - [x] Parts planner with BOM expansion
 - [x] OBD-II bridge (DTCs, freeze frame, live data, mock mode)
@@ -458,6 +565,10 @@ Customer replies:
 - [x] Microphone input (ALSA/PyAudio/WAV)
 - [x] Barcode scanner (USB HID + camera)
 - [x] Audio effects (EQ, compression, gate for noisy shops)
+- [x] **Step-by-step repair workflows** with exact tool/fastener matching
+- [x] **Workflow predictor** — next tool, fastener, warning prediction
+- [x] **Ollama bridge** — local LLM for voice intent parsing + procedure Q&A
+- [x] **Photo hint manager** — photos, diagrams, videos per step with bounding boxes
 - [x] Hermes skill integration
 
 ### In Progress
@@ -468,10 +579,9 @@ Customer replies:
 - [ ] Web dashboard (Flask/FastAPI for shop tablets)
 
 ### Planned
-- [ ] More engine families: Chevy LS, BMW M50/M52, Subaru EJ, Ford Modular, Nissan RB/VQ
+- [ ] More engine families: Chevy LS, Porsche Boxer, diesel common-rail
 - [ ] ASE-style labor time integration
 - [ ] Mobile app companion (React Native or PWA)
-- [ ] Local LLM integration (Ollama for complex diagnostics)
 - [ ] Fleet management module (multi-vehicle corporate accounts)
 
 ---
